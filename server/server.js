@@ -13,19 +13,6 @@ import path from 'path';
 
 dotenv.config();
 
-// Sync user's exact profile photo to client/public directory
-try {
-  const photoSrc = 'C:/Users/samyuktha/.gemini/antigravity-ide/brain/a124a6c0-9c06-4bae-9c2d-a9a0d595b322/media__1785071333751.png';
-  const clientPublicDir = path.resolve(process.cwd(), '../client/public');
-  if (fs.existsSync(photoSrc) && fs.existsSync(clientPublicDir)) {
-    fs.copyFileSync(photoSrc, path.join(clientPublicDir, 'profile.png'));
-    fs.copyFileSync(photoSrc, path.join(clientPublicDir, 'profile.jpg'));
-    console.log('📸 [Profile Photo] Original uploaded user image copied to client/public/profile.png & profile.jpg');
-  }
-} catch (imgErr) {
-  console.error('⚠️ [Profile Photo Error]', imgErr.message);
-}
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -34,16 +21,23 @@ app.use(helmet({
   contentSecurityPolicy: false,
 }));
 
-// CORS Configuration
+// CORS Configuration - Normalize origins & allow local + Vercel deployment URLs
+const configuredClientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.replace(/\/$/, '') : null;
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-  process.env.CLIENT_URL,
+  configuredClientUrl,
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (!origin) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (
+      allowedOrigins.includes(normalizedOrigin) ||
+      process.env.NODE_ENV !== 'production' ||
+      /\.vercel\.app$/.test(normalizedOrigin)
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Blocked by CORS policy'));

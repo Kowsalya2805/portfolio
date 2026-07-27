@@ -11,7 +11,14 @@ export interface StatsResponse {
   resumeDownloads: number;
 }
 
-const API_BASE = '/api';
+const getApiBase = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return '/api';
+  const cleanUrl = envUrl.replace(/\/$/, '');
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+};
+
+const API_BASE = getApiBase();
 
 export async function sendContactMessage(data: ContactFormData) {
   const response = await fetch(`${API_BASE}/contact`, {
